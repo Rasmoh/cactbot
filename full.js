@@ -1,0 +1,1 @@
+require('./output/cactbot').run(false);
