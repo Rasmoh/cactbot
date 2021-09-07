@@ -8,12 +8,18 @@ const rl = createInterface({
     output: process.stdout,
 });
 
+/**
+ * Ask a question to the user and return an answer
+ */
 const question = (query: string): Promise<string> => {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
         rl.question(query, resolve);
-    })
-}
+    });
+};
 
+/**
+ * Ask a question and ensure a valid number 1-9 is returned
+ */
 const num_question = async (query): Promise<number> => {
     while (true) {
         try {
@@ -22,20 +28,27 @@ const num_question = async (query): Promise<number> => {
             if (result >= 1 || result <= 9) {
                 return result;
             }
-        } catch (error) { }
+        } catch (error) {}
     }
-}
+};
 
+/**
+ * Given a board state with partial information, return the expected
+ * value of each line
+ */
 const calculateEVs = (boardState: number[]) => {
-    const remainingNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(number => boardState.indexOf(number) === -1);
+    // Only choose numbers that haven't already been revealed
+    const remainingNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((number) => boardState.indexOf(number) === -1);
     const evList = [];
 
-    LineDefinitions.forEach(lineDefinition => {
+    LineDefinitions.forEach((lineDefinition) => {
         let existingTotal = 0;
         let blanks = 0;
+        // Count the number of un-revealed squares in this line as well as the sum of the
+        // revealed squares, for use below
         for (let i = 0; i < 3; ++i) {
             if (boardState[lineDefinition.indices[i]] > 0) {
-                existingTotal += boardState[lineDefinition.indices[i]]
+                existingTotal += boardState[lineDefinition.indices[i]];
             } else {
                 blanks++;
             }
@@ -44,15 +57,21 @@ const calculateEVs = (boardState: number[]) => {
         if (blanks > 0) {
             let totalValue = 0;
             let combinationCount = 0;
+            // Of the un-revealed numbers, choose one for each un-revealed square in this line
             const numbers_next = choose(remainingNumbers, blanks);
             let chosenNumbers: number[];
-            while (chosenNumbers = numbers_next()) {
+            while ((chosenNumbers = numbers_next())) {
+                // Sum the numbers for each combination for this line and keep a running total
+                // of the payout values.
                 let lineTotal = existingTotal + chosenNumbers.reduce((total, current) => total + current);
                 totalValue += Payouts[lineTotal];
                 combinationCount++;
             }
+            // Divide the payout value running total by the number of different combinations
+            // to get the expected value
             evList.push(totalValue / combinationCount);
         } else {
+            // This line is already entirely revealed, so the EV is just the actual value
             evList.push(Payouts[existingTotal]);
         }
     });
@@ -60,14 +79,23 @@ const calculateEVs = (boardState: number[]) => {
     return evList;
 };
 
-const mapEVs = (boardState: number[], evList: number[]) => {
+/**
+ * For a given list of expected line values, return a list of values representing
+ * the total EV of each square. For example, the top-left square (index 0 in the return list)
+ * is the sum of the top row line EV, the left column line EV, and the \ diagonal EV, since
+ * the top-left square is a member of each of those lines.
+ */
+const mapEVs = (evList: number[]) => {
     const evMap = [0, 0, 0, 0, 0, 0, 0, 0, 0];
     for (let i = 0; i < evList.length; ++i) {
-        LineDefinitions[i].indices.forEach(lineIndex => evMap[lineIndex] += evList[i]);
+        LineDefinitions[i].indices.forEach((lineIndex) => (evMap[lineIndex] += evList[i]));
     }
     return evMap;
-}
+};
 
+/**
+ * Display the list of EVs and highlight the best one.
+ */
 const renderEVList = (evList: number[]) => {
     const bestEVIndex = evList.reduce((prev, val, index) => {
         return evList[index] > evList[prev] ? index : prev;
@@ -81,8 +109,16 @@ const renderEVList = (evList: number[]) => {
         console.log(color(`${LineDefinitions[i].name}: ${evList[i]}`));
     }
     console.log();
-}
+};
 
+/**
+ * Display the board with each square's total EV, highlighting the highest
+ * total. This represents the un-revealed square the user should scratch off
+ * to provide the most valuable information.
+ *
+ * Also returns the position of the square the user should scratch off so
+ * we can avoid asking them the position they scratched off next time.
+ */
 const renderEVMap = (boardState: number[], evMap: number[]) => {
     const bestEVIndex = evMap.reduce((prev, val, index) => {
         if (boardState[index] === 0) {
@@ -99,7 +135,7 @@ const renderEVMap = (boardState: number[], evMap: number[]) => {
     for (let i = 0; i < 3; ++i) {
         let line = "";
         for (let j = 0; j < 3; ++j) {
-            const index = (i * 3) + j;
+            const index = i * 3 + j;
             if (boardState[index] === 0) {
                 let color = gray;
                 if (index === bestEVIndex) {
@@ -115,25 +151,7 @@ const renderEVMap = (boardState: number[], evMap: number[]) => {
     console.log();
 
     return bestEVIndex;
-}
-
-export const runSimple = () => {
-    if (process.argv.length != 11) {
-        console.log("Please specify all nine positions");
-    } else {
-
-        const input: number[] = [];
-
-        for (let i = 2; i < 11; ++i) {
-            input.push(Number.parseInt(process.argv[i], 10));
-        }
-
-        const evList = calculateEVs(input);
-
-        renderEVList(evList);
-    }
-    rl.close();
-}
+};
 
 export const run = async (quick: boolean) => {
     const boardState = [0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -142,21 +160,22 @@ export const run = async (quick: boolean) => {
     let value: number = 0;
     let evList: number[] = [];
     let evMap: number[] = [];
-    
-    position = await num_question("Position (1 - 9): ") - 1;
+
+    // TODO: A loop instead of copy-pasting three times...
+    position = (await num_question("Position (1 - 9): ")) - 1;
     value = await num_question("Value (1 - 9): ");
     console.log();
     rl.pause();
 
     boardState[position] = value;
     evList = calculateEVs(boardState);
-    evMap = mapEVs(boardState, evList);
+    evMap = mapEVs(evList);
     previousPosition = renderEVMap(boardState, evMap);
 
     if (quick) {
         position = previousPosition;
     } else {
-        position = await num_question("Position (1 - 9): ") - 1;
+        position = (await num_question("Position (1 - 9): ")) - 1;
     }
     value = await num_question("Value (1 - 9): ");
     console.log();
@@ -164,13 +183,13 @@ export const run = async (quick: boolean) => {
 
     boardState[position] = value;
     evList = calculateEVs(boardState);
-    evMap = mapEVs(boardState, evList);
+    evMap = mapEVs(evList);
     previousPosition = renderEVMap(boardState, evMap);
 
     if (quick) {
         position = previousPosition;
     } else {
-        position = await num_question("Position (1 - 9): ") - 1;
+        position = (await num_question("Position (1 - 9): ")) - 1;
     }
     value = await num_question("Value (1 - 9): ");
     console.log();
@@ -178,13 +197,13 @@ export const run = async (quick: boolean) => {
 
     boardState[position] = value;
     evList = calculateEVs(boardState);
-    evMap = mapEVs(boardState, evList);
+    evMap = mapEVs(evList);
     previousPosition = renderEVMap(boardState, evMap);
 
     if (quick) {
         position = previousPosition;
     } else {
-        position = await num_question("Position (1 - 9): ") - 1;
+        position = (await num_question("Position (1 - 9): ")) - 1;
     }
     value = await num_question("Value (1 - 9): ");
     console.log();
@@ -193,4 +212,4 @@ export const run = async (quick: boolean) => {
     boardState[position] = value;
     evList = calculateEVs(boardState);
     renderEVList(evList);
-}
+};
