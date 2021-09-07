@@ -156,60 +156,33 @@ const renderEVMap = (boardState: number[], evMap: number[]) => {
 export const run = async (quick: boolean) => {
     const boardState = [0, 0, 0, 0, 0, 0, 0, 0, 0];
     let position: number = 0;
-    let previousPosition: number = 0;
+    let previousPosition: number = -1;
     let value: number = 0;
     let evList: number[] = [];
     let evMap: number[] = [];
 
-    // TODO: A loop instead of copy-pasting three times...
-    position = (await num_question("Position (1 - 9): ")) - 1;
-    value = await num_question("Value (1 - 9): ");
-    console.log();
-    rl.pause();
+    for (let i = 0; i < 4; ++i) {
+        if (quick && previousPosition !== -1) {
+            // In quick mode assume the user scratched off the recommended square
+            position = previousPosition;
+        } else {
+            position = (await num_question("Position (1 - 9): ")) - 1;
+        }
 
-    boardState[position] = value;
-    evList = calculateEVs(boardState);
-    evMap = mapEVs(evList);
-    previousPosition = renderEVMap(boardState, evMap);
+        value = await num_question("Value (1 - 9): ");
+        console.log();
+        rl.pause();
 
-    if (quick) {
-        position = previousPosition;
-    } else {
-        position = (await num_question("Position (1 - 9): ")) - 1;
+        boardState[position] = value;
+        evList = calculateEVs(boardState);
+
+        if (i < 3) {
+            // The first three times, recommend a square to scratch off
+            evMap = mapEVs(evList);
+            previousPosition = renderEVMap(boardState, evMap);
+        } else {
+            // The last time, recommend a line to choose
+            renderEVList(evList);
+        }
     }
-    value = await num_question("Value (1 - 9): ");
-    console.log();
-    rl.pause();
-
-    boardState[position] = value;
-    evList = calculateEVs(boardState);
-    evMap = mapEVs(evList);
-    previousPosition = renderEVMap(boardState, evMap);
-
-    if (quick) {
-        position = previousPosition;
-    } else {
-        position = (await num_question("Position (1 - 9): ")) - 1;
-    }
-    value = await num_question("Value (1 - 9): ");
-    console.log();
-    rl.pause();
-
-    boardState[position] = value;
-    evList = calculateEVs(boardState);
-    evMap = mapEVs(evList);
-    previousPosition = renderEVMap(boardState, evMap);
-
-    if (quick) {
-        position = previousPosition;
-    } else {
-        position = (await num_question("Position (1 - 9): ")) - 1;
-    }
-    value = await num_question("Value (1 - 9): ");
-    console.log();
-    rl.pause();
-
-    boardState[position] = value;
-    evList = calculateEVs(boardState);
-    renderEVList(evList);
 };
