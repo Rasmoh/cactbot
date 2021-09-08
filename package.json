@@ -1,22 +1,19 @@
 {
-  "name": "cactbot",
-  "version": "1.0.0",
-  "description": "Solver for FF XIV Mini Cactpot",
-  "main": "simple.js",
-  "scripts": {
-    "test": "test"
-  },
-  "keywords": [
-    "ff",
-    "xiv",
-    "14",
-    "cactpot"
-  ],
-  "author": "Jamie Eckman",
-  "license": "ISC",
-  "dependencies": {
-    "@types/node": "^16.4.13",
-    "ansi-colors": "^4.1.1",
-    "typescript": "^4.3.5"
-  }
+    "name": "cactbot",
+    "version": "1.0.0",
+    "description": "Solver for FF XIV Mini Cactpot",
+    "main": "quick.js",
+    "keywords": [
+        "ff",
+        "xiv",
+        "14",
+        "cactpot"
+    ],
+    "author": "Jamie Eckman",
+    "license": "MIT",
+    "dependencies": {
+        "@types/node": "^16.4.13",
+        "ansi-colors": "^4.1.1",
+        "typescript": "^4.3.5"
+    }
 }
