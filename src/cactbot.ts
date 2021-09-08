@@ -20,12 +20,12 @@ const question = (query: string): Promise<string> => {
 /**
  * Ask a question and ensure a valid number 1-9 is returned
  */
-const num_question = async (query): Promise<number> => {
+const num_question = async (query: string): Promise<number> => {
     while (true) {
         try {
             const raw = await question(query);
             const result = Number.parseInt(raw, 10);
-            if (result >= 1 || result <= 9) {
+            if (result >= 1 && result <= 9) {
                 return result;
             }
         } catch (error) {}
@@ -155,13 +155,15 @@ const renderEVMap = (boardState: number[], evMap: number[]) => {
 
 export const run = async (quick: boolean) => {
     const boardState = [0, 0, 0, 0, 0, 0, 0, 0, 0];
-    let position: number = 0;
     let previousPosition: number = -1;
-    let value: number = 0;
     let evList: number[] = [];
     let evMap: number[] = [];
 
     for (let i = 0; i < 4; ++i) {
+        let position: number = 0;
+        let value: number = 0;
+
+
         if (quick && previousPosition !== -1) {
             // In quick mode assume the user scratched off the recommended square
             position = previousPosition;
