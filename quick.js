@@ -1,1 +1,1 @@
-require('./output/cactbot').run(true);
+require('./dist/cactbot').run(true);
