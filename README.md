@@ -6,6 +6,12 @@ A playing aid for Final Fantasy 14's Mini-Cactpot scratch-off mini-game.
 
 - [Node.js](https://nodejs.dev/)
 
+### Setup
+
+Run this first:
+
+- `npm i`
+
 ### Usage
 
 - `node quick.js` or `node full.js`, to your preference
@@ -14,7 +20,6 @@ A playing aid for Final Fantasy 14's Mini-Cactpot scratch-off mini-game.
 
 Building shouldn't be necessary if you just want to run the existing code, but if you want to try changing anything this is what you'll need to run:
 
-- `npm i`
 - `tsc`
 
 ### How does this work?
