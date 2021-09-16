@@ -42,9 +42,9 @@ Now, let's suppose you have a grid of numbers with some revealed squares, same a
 
 By testing every permutation of the grid and starting scratched-off square, we can evaluate how well a particular solving strategy fares versus the ideal (where you always select the line with the highest payout). There are only about 3.2 million of these permutations, so it's a reasonable computation. So you don't have to run the evaluation function yourself, here are the (cleaned up) results:
 
-Runtime: ~5 minutes
-Permutations tested: 3265920
-Summed EV success rate: 36.69%
-Summed EV value rating: 78.49%
+* Runtime: ~5 minutes
+* Permutations tested: 3265920
+* Summed EV success rate: 36.69%
+* Summed EV value rating: 78.49%
 
 A success rate of barely 1/3 does not look that impressive, but keep in mind that the algorithm favors investigating high EV lines. If such a line doesn't exist, the algorithm isn't going to have a great chance of finding the best, lower-paying line. The EV value rating is better. In essence, it says that if you played every possible grid, you'd earn 78% of the maximum payout. In other words, this strategy largely succeeds at finding higher payouts by ignoring lower payouts, since missing low payouts for even lower payouts doesn't matter as much.
