@@ -36,7 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.run = void 0;
+exports.run = exports.renderEVMap = exports.renderEVList = exports.getBestEV = exports.summedEVStrategy = exports.calculateEVs = void 0;
 var readline_1 = require("readline");
 var ansi_colors_1 = require("ansi-colors");
 var choose_1 = require("./choose");
@@ -45,6 +45,7 @@ var rl = readline_1.createInterface({
     input: process.stdin,
     output: process.stdout
 });
+rl.pause();
 /**
  * Ask a question to the user and return an answer
  */
@@ -126,13 +127,16 @@ var calculateEVs = function (boardState) {
     });
     return evList;
 };
+exports.calculateEVs = calculateEVs;
 /**
  * For a given list of expected line values, return a list of values representing
  * the total EV of each square. For example, the top-left square (index 0 in the return list)
  * is the sum of the top row line EV, the left column line EV, and the \ diagonal EV, since
  * the top-left square is a member of each of those lines.
+ *
+ * Also return the index of the best of those values.
  */
-var mapEVs = function (evList) {
+var summedEVStrategy = function (boardState, evList) {
     var evMap = [0, 0, 0, 0, 0, 0, 0, 0, 0];
     var _loop_1 = function (i) {
         types_1.LineDefinitions[i].indices.forEach(function (lineIndex) { return (evMap[lineIndex] += evList[i]); });
@@ -140,8 +144,28 @@ var mapEVs = function (evList) {
     for (var i = 0; i < evList.length; ++i) {
         _loop_1(i);
     }
-    return evMap;
+    var bestEVIndex = evMap.reduce(function (prev, val, index) {
+        if (boardState[index] === 0) {
+            if (prev === -1) {
+                return index;
+            }
+            else {
+                return evMap[index] > evMap[prev] ? index : prev;
+            }
+        }
+        else {
+            return prev;
+        }
+    }, -1);
+    return [bestEVIndex, evMap];
 };
+exports.summedEVStrategy = summedEVStrategy;
+var getBestEV = function (idealEVs) {
+    return idealEVs.reduce(function (prev, val, index) {
+        return idealEVs[index] > prev[1] ? [index, val] : prev;
+    }, [-1, -1]);
+};
+exports.getBestEV = getBestEV;
 /**
  * Display the list of EVs and highlight the best one.
  */
@@ -158,28 +182,13 @@ var renderEVList = function (evList) {
     }
     console.log();
 };
+exports.renderEVList = renderEVList;
 /**
  * Display the board with each square's total EV, highlighting the highest
  * total. This represents the un-revealed square the user should scratch off
  * to provide the most valuable information.
- *
- * Also returns the position of the square the user should scratch off so
- * we can avoid asking them the position they scratched off next time.
  */
-var renderEVMap = function (boardState, evMap) {
-    var bestEVIndex = evMap.reduce(function (prev, val, index) {
-        if (boardState[index] === 0) {
-            if (prev === -1) {
-                return index;
-            }
-            else {
-                return evMap[index] > evMap[prev] ? index : prev;
-            }
-        }
-        else {
-            return prev;
-        }
-    }, -1);
+var renderEVMap = function (boardState, bestEVIndex, evMap) {
     for (var i = 0; i < 3; ++i) {
         var line = "";
         for (var j = 0; j < 3; ++j) {
@@ -198,19 +207,20 @@ var renderEVMap = function (boardState, evMap) {
         console.log(line);
     }
     console.log();
-    return bestEVIndex;
 };
+exports.renderEVMap = renderEVMap;
 var run = function (quick) { return __awaiter(void 0, void 0, void 0, function () {
     var boardState, previousPosition, evList, evMap, i, position, value;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
+    var _a;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
             case 0:
                 boardState = [0, 0, 0, 0, 0, 0, 0, 0, 0];
                 previousPosition = -1;
                 evList = [];
                 evMap = [];
                 i = 0;
-                _a.label = 1;
+                _b.label = 1;
             case 1:
                 if (!(i < 4)) return [3 /*break*/, 7];
                 position = 0;
@@ -221,25 +231,25 @@ var run = function (quick) { return __awaiter(void 0, void 0, void 0, function (
                 return [3 /*break*/, 4];
             case 2: return [4 /*yield*/, num_question("Position (1 - 9): ")];
             case 3:
-                position = (_a.sent()) - 1;
-                _a.label = 4;
+                position = (_b.sent()) - 1;
+                _b.label = 4;
             case 4: return [4 /*yield*/, num_question("Value (1 - 9): ")];
             case 5:
-                value = _a.sent();
+                value = _b.sent();
                 console.log();
                 rl.pause();
                 boardState[position] = value;
-                evList = calculateEVs(boardState);
+                evList = exports.calculateEVs(boardState);
                 if (i < 3) {
                     // The first three times, recommend a square to scratch off
-                    evMap = mapEVs(evList);
-                    previousPosition = renderEVMap(boardState, evMap);
+                    _a = exports.summedEVStrategy(boardState, evList), previousPosition = _a[0], evMap = _a[1];
+                    exports.renderEVMap(boardState, previousPosition, evMap);
                 }
                 else {
                     // The last time, recommend a line to choose
-                    renderEVList(evList);
+                    exports.renderEVList(evList);
                 }
-                _a.label = 6;
+                _b.label = 6;
             case 6:
                 ++i;
                 return [3 /*break*/, 1];

@@ -7,6 +7,7 @@ const rl = createInterface({
     input: process.stdin,
     output: process.stdout,
 });
+rl.pause();
 
 /**
  * Ask a question to the user and return an answer
@@ -36,10 +37,10 @@ const num_question = async (query: string): Promise<number> => {
  * Given a board state with partial information, return the expected
  * value of each line
  */
-const calculateEVs = (boardState: number[]) => {
+export const calculateEVs = (boardState: number[]) => {
     // Only choose numbers that haven't already been revealed
     const remainingNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((number) => boardState.indexOf(number) === -1);
-    const evList = [];
+    const evList: number[] = [];
 
     LineDefinitions.forEach((lineDefinition) => {
         let existingTotal = 0;
@@ -84,19 +85,42 @@ const calculateEVs = (boardState: number[]) => {
  * the total EV of each square. For example, the top-left square (index 0 in the return list)
  * is the sum of the top row line EV, the left column line EV, and the \ diagonal EV, since
  * the top-left square is a member of each of those lines.
+ *
+ * Also return the index of the best of those values.
  */
-const mapEVs = (evList: number[]) => {
+export const summedEVStrategy = (boardState: number[], evList: number[]): [number, number[]] => {
     const evMap = [0, 0, 0, 0, 0, 0, 0, 0, 0];
     for (let i = 0; i < evList.length; ++i) {
         LineDefinitions[i].indices.forEach((lineIndex) => (evMap[lineIndex] += evList[i]));
     }
-    return evMap;
+
+    const bestEVIndex = evMap.reduce((prev, val, index) => {
+        if (boardState[index] === 0) {
+            if (prev === -1) {
+                return index;
+            } else {
+                return evMap[index] > evMap[prev] ? index : prev;
+            }
+        } else {
+            return prev;
+        }
+    }, -1);
+
+    return [bestEVIndex, evMap];
 };
+
+export const getBestEV = (idealEVs: number[]) =>
+    idealEVs.reduce(
+        (prev, val, index) => {
+            return idealEVs[index] > prev[1] ? [index, val] : prev;
+        },
+        [-1, -1]
+    );
 
 /**
  * Display the list of EVs and highlight the best one.
  */
-const renderEVList = (evList: number[]) => {
+export const renderEVList = (evList: number[]) => {
     const bestEVIndex = evList.reduce((prev, val, index) => {
         return evList[index] > evList[prev] ? index : prev;
     }, 0);
@@ -115,23 +139,8 @@ const renderEVList = (evList: number[]) => {
  * Display the board with each square's total EV, highlighting the highest
  * total. This represents the un-revealed square the user should scratch off
  * to provide the most valuable information.
- *
- * Also returns the position of the square the user should scratch off so
- * we can avoid asking them the position they scratched off next time.
  */
-const renderEVMap = (boardState: number[], evMap: number[]) => {
-    const bestEVIndex = evMap.reduce((prev, val, index) => {
-        if (boardState[index] === 0) {
-            if (prev === -1) {
-                return index;
-            } else {
-                return evMap[index] > evMap[prev] ? index : prev;
-            }
-        } else {
-            return prev;
-        }
-    }, -1);
-
+export const renderEVMap = (boardState: number[], bestEVIndex: number, evMap: number[]) => {
     for (let i = 0; i < 3; ++i) {
         let line = "";
         for (let j = 0; j < 3; ++j) {
@@ -149,8 +158,6 @@ const renderEVMap = (boardState: number[], evMap: number[]) => {
         console.log(line);
     }
     console.log();
-
-    return bestEVIndex;
 };
 
 export const run = async (quick: boolean) => {
@@ -162,7 +169,6 @@ export const run = async (quick: boolean) => {
     for (let i = 0; i < 4; ++i) {
         let position: number = 0;
         let value: number = 0;
-
 
         if (quick && previousPosition !== -1) {
             // In quick mode assume the user scratched off the recommended square
@@ -180,8 +186,8 @@ export const run = async (quick: boolean) => {
 
         if (i < 3) {
             // The first three times, recommend a square to scratch off
-            evMap = mapEVs(evList);
-            previousPosition = renderEVMap(boardState, evMap);
+            [previousPosition, evMap] = summedEVStrategy(boardState, evList);
+            renderEVMap(boardState, previousPosition, evMap);
         } else {
             // The last time, recommend a line to choose
             renderEVList(evList);
