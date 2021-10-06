@@ -40,7 +40,11 @@ Now, let's suppose you have a grid of numbers with some revealed squares, same a
 
 ### Evaluation
 
-By testing every permutation of the grid and starting scratched-off square, we can evaluate how well a particular solving strategy fares versus the ideal (where you always select the line with the highest payout). There are only about 3.2 million of these permutations, so it's a reasonable computation. So you don't have to run the evaluation function yourself, here are the (cleaned up) results:
+By testing every permutation of the grid and starting scratched-off square, we can evaluate how well a particular solving strategy fares versus the ideal (where you always select the line with the highest payout). There are only about 3.2 million of these permutations.
+
+#### Summed EV strategy
+
+Here are the results for the summed EV strategy presented above:
 
 * Runtime: ~5 minutes
 * Permutations tested: 3265920
@@ -48,3 +52,16 @@ By testing every permutation of the grid and starting scratched-off square, we c
 * Summed EV value rating: 78.49%
 
 A success rate of barely 1/3 does not look that impressive, but keep in mind that the algorithm favors investigating high EV lines. If such a line doesn't exist, the algorithm isn't going to have a great chance of finding the best, lower-paying line. The EV value rating is better. In essence, it says that if you played every possible grid, you'd earn 78% of the maximum payout. In other words, this strategy largely succeeds at finding higher payouts by ignoring lower payouts, since missing low payouts for even lower payouts doesn't matter as much.
+
+#### "Perfect" strategy
+
+These are the results of the strategy employed by the algorithm developed by Reddit users /u/Aureolux and /u/Super_Aardvark:
+
+* Runtime: ~3 days
+* Permutations tested: 3265920
+* Summed EV success rate: 37.58%
+* Summed EV value rating: 80.06%
+
+Indeed this is slightly better than the strategy I developed, and it achieves this by recursively investigating every possible future choice and outcome and choosing the one with the best total EV. (For exhaustive evaluation the runtime could certainly be massively improved with run-time memoization, but for its intended purpose of solving individual puzzles that would be a waste of time.)
+
+Where this algorithm shines are the edge cases where you uncover two very promising numbers in a row early (e.g. 7 and 8). The summed EV strategy will want to reveal the third square in line with the first two numbers as it has the highest EV. However, this is a mistake; it's better to check other squares and, if nothing better (e.g. a 1 and 2 in a line) or contradictory (e.g. the 9 appears elsewhere) arises, simply choose the original promising row as your final move.
